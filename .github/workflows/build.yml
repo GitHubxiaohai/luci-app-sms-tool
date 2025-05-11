@@ -16,17 +16,25 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Verify split files
+      run: |
+        if [ ! -f openwrt-sdk-source.7z.001 ]; then
+          echo "错误：分块文件 openwrt-sdk-source.7z.001 不存在"
+          exit 1
+        fi
+        echo "分块文件验证通过"
+
     - name: Install 7-Zip and merge files
       run: |
-        sudo apt-get update
-        sudo apt-get install -y p7zip-full  # 安装 7-Zip
-        7z x openwrt-sdk-source.7z.001 -o./sdk-source  # 合并分块文件
+        sudo apt-get install -y p7zip-full
+        ls -l  # 调试文件列表
+        7z x openwrt-sdk-source.7z.001 -o./sdk-source
 
     - name: Set up OpenWrt SDK
       run: |
         cd sdk-source
-        tar -xf openwrt-sdk-source.tar.xz  # 解压源码
-        mv openwrt openwrt-sdk  # 重命名目录
+        tar -xf openwrt-sdk-source.tar.xz
+        mv openwrt openwrt-sdk
 
     - name: Compile luci-app-sms-tool
       run: |
