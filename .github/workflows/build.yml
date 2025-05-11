@@ -1,0 +1,43 @@
+name: Build luci-app-sms-tool
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install 7-Zip and merge files
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y p7zip-full  # 安装 7-Zip
+        7z x openwrt-sdk-source.7z.001 -o./sdk-source  # 合并分块文件
+
+    - name: Set up OpenWrt SDK
+      run: |
+        cd sdk-source
+        tar -xf openwrt-sdk-source.tar.xz  # 解压源码
+        mv openwrt openwrt-sdk  # 重命名目录
+
+    - name: Compile luci-app-sms-tool
+      run: |
+        cd sdk-source/openwrt-sdk
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        make defconfig
+        make package/luci-app-sms-tool/compile V=s
+
+    - name: Upload IPK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ipk-package
+        path: sdk-source/openwrt-sdk/bin/packages/x86_64/luci/*.ipk
