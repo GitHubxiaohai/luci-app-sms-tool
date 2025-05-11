@@ -1,1 +1,1 @@
-# luci-app-sms-tool-v1
+# luci-app-sms-tool
