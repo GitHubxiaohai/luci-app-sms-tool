@@ -26,19 +26,25 @@ jobs:
     # -------------------------- 步骤 3：合并并解压 7z 分块文件 --------------------------
     - name: Merge and extract 7z split files
       run: |
-        # 合并并解压分块文件到 sdk-source 目录
-        7z x openwrt-sdk-source.7z.001 -o./sdk-source
+        # 合并并解压分块文件到临时目录
+        7z x openwrt-sdk-source.7z.001 -o./_temp_sdk
 
-        # 调试：列出解压后的目录结构（关键！）
-        echo "===== 解压后的目录结构 ====="
-        ls -l sdk-source/
+        # 调试：展示解压后的文件结构（关键！）
+        echo "===== 解压后的文件结构 ====="
+        ls -l _temp_sdk
 
-        # 获取解压后的实际目录名（自动适配）
-        SDK_DIR=$(ls sdk-source)
-        echo "检测到 SDK 目录: $SDK_DIR"
+        # 检查解压内容是否为目录（动态适配）
+        if [ -d "_temp_sdk/openwrt-sdk" ]; then
+          mv _temp_sdk/openwrt-sdk sdk-source
+        elif [ -d "_temp_sdk/openwrt-22.03.7" ]; then
+          mv _temp_sdk/openwrt-22.03.7 sdk-source/openwrt-sdk
+        else
+          echo "错误：解压后的内容不是有效目录"
+          exit 1
+        fi
 
-        # 重命名为固定路径（方便后续步骤）
-        mv sdk-source/$SDK_DIR sdk-source/openwrt-sdk
+        # 清理临时目录
+        rm -rf _temp_sdk
 
     # -------------------------- 步骤 4：修复权限 --------------------------
     - name: Fix permissions
