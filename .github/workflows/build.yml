@@ -23,13 +23,22 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y p7zip-full build-essential python3
 
-    # -------------------------- 步骤 3：合并分块文件 --------------------------
-    - name: Merge 7z split files
+    # -------------------------- 步骤 3：合并并解压 7z 分块文件 --------------------------
+    - name: Merge and extract 7z split files
       run: |
-        # 合并所有 .7z 分块文件（通配符匹配）
+        # 合并并解压分块文件到 sdk-source 目录
         7z x openwrt-sdk-source.7z.001 -o./sdk-source
-        # 检查解压后的目录
+
+        # 调试：列出解压后的目录结构（关键！）
+        echo "===== 解压后的目录结构 ====="
         ls -l sdk-source/
+
+        # 获取解压后的实际目录名（自动适配）
+        SDK_DIR=$(ls sdk-source)
+        echo "检测到 SDK 目录: $SDK_DIR"
+
+        # 重命名为固定路径（方便后续步骤）
+        mv sdk-source/$SDK_DIR sdk-source/openwrt-sdk
 
     # -------------------------- 步骤 4：修复权限 --------------------------
     - name: Fix permissions
