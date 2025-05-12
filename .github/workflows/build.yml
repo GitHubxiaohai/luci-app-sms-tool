@@ -16,54 +16,41 @@ jobs:
     # -------------------------- 步骤 1：拉取代码 --------------------------
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        submodules: recursive  # 确保拉取所有子模块
 
-    # -------------------------- 步骤 2：安装基础依赖 --------------------------
+    # -------------------------- 步骤 2：安装依赖 --------------------------
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential python3 unzip rsync p7zip-full
+        sudo apt-get install -y p7zip-full build-essential python3
 
     # -------------------------- 步骤 3：合并分块文件 --------------------------
-    - name: Merge split files
+    - name: Merge 7z split files
       run: |
-        # 合并所有分块文件
-        cat openwrt-sdk-source.tar.xz.* > openwrt-sdk-source.tar.xz
-        # 检查合并后的文件
-        ls -lh openwrt-sdk-source.tar.xz
+        # 合并所有 .7z 分块文件（通配符匹配）
+        7z x openwrt-sdk-source.7z.001 -o./sdk-source
+        # 检查解压后的目录
+        ls -l sdk-source/
 
-    # -------------------------- 步骤 4：解压并修复权限 --------------------------
-    - name: Extract SDK and fix permissions
+    # -------------------------- 步骤 4：修复权限 --------------------------
+    - name: Fix permissions
       run: |
-        # 创建目标目录
-        mkdir -p sdk-source
-        # 解压 SDK
-        tar -xf openwrt-sdk-source.tar.xz -C sdk-source/
-        # 重命名目录（根据实际解压后的目录名调整）
-        mv sdk-source/openwrt-22.03.7 sdk-source/openwrt-sdk
-        # 递归修复权限（关键！）
-        chmod -R a+x sdk-source/openwrt-sdk/scripts
-        chmod -R a+x sdk-source/openwrt-sdk/feeds
+        cd sdk-source/openwrt-sdk
+        chmod -R +x scripts
+        chmod -R +x feeds
 
-    # -------------------------- 步骤 5：复制项目文件到 SDK --------------------------
+    # -------------------------- 步骤 5：复制项目文件 --------------------------
     - name: Copy project files
       run: |
-        # 创建目标目录
         mkdir -p sdk-source/openwrt-sdk/package/luci-app-sms-tool
-        # 复制源码（假设项目文件在仓库根目录）
         cp -r $GITHUB_WORKSPACE/* sdk-source/openwrt-sdk/package/luci-app-sms-tool/
 
     # -------------------------- 步骤 6：编译 LuCI 应用 --------------------------
     - name: Compile luci-app-sms-tool
       run: |
         cd sdk-source/openwrt-sdk
-        # 更新 feeds
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        # 生成默认配置
         make defconfig
-        # 开始编译（显示详细日志）
         make package/luci-app-sms-tool/compile V=s
 
     # -------------------------- 步骤 7：上传生成的 IPK 文件 --------------------------
