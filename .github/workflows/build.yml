@@ -23,7 +23,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y p7zip-full build-essential python3 xz-utils
 
-    # -------------------------- 步骤 3：合并并解压分块文件（两层解压） --------------------------
+    # -------------------------- 步骤 3：合并并解压分块文件（关键改进） --------------------------
     - name: Merge and extract SDK
       run: |
         # 合并 7z 分块文件
@@ -37,19 +37,32 @@ jobs:
         echo "===== SDK 目录结构 ====="
         ls -l sdk-source/
 
-        # 动态获取 SDK 目录名（示例：openwrt-22.03.7）
+        # 动态获取 SDK 目录名（示例：openwrt-sdk-22.03.7）
         SDK_DIR_NAME=$(ls sdk-source)
         mv sdk-source/$SDK_DIR_NAME sdk-source/openwrt-sdk
 
         # 清理临时文件
         rm -rf _temp
 
+        # 验证 feeds 文件存在性（关键！）
+        echo "===== 验证 feeds 文件 ====="
+        ls -l sdk-source/openwrt-sdk/feeds
+
     # -------------------------- 步骤 4：修复权限 --------------------------
     - name: Fix permissions
       run: |
         cd sdk-source/openwrt-sdk
-        chmod -R +x scripts
-        chmod -R +x feeds
+        # 仅修复确实存在的目录权限
+        if [ -d "scripts" ]; then
+          chmod -R +x scripts
+        fi
+        if [ -f "feeds" ]; then
+          chmod +x feeds
+        elif [ -d "feeds" ]; then
+          chmod -R +x feeds
+        else
+          echo "警告：feeds 文件或目录不存在，请检查 SDK 完整性"
+        fi
 
     # -------------------------- 步骤 5：复制项目文件 --------------------------
     - name: Copy project files
